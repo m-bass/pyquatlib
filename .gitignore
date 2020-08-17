@@ -1,0 +1,15 @@
+# pipenv lock file
+Pipfile.lock
+
+# IDEs
+/.vscode/
+/.idea/
+
+# cache
+/__pycache__/
+quaternions/__pycache__/
+tests/__pycache__/
+
+/.mypy_cache/
+/.pytest_cache/
+/quaternions.egg-info/

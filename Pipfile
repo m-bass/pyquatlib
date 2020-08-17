@@ -1,0 +1,30 @@
+[[source]]
+name = "pypi"
+url = "https://pypi.org/simple"
+verify_ssl = true
+
+[dev-packages]
+pytest = "*"
+pytest-runner = "*"
+flake8 = "*"
+mypy = "*"
+isort = "*"
+black = "*"
+jupyter = "*"
+sphinx = "*"
+sphinx-autodoc-typehints = "*"
+sphinxcontrib-katex = "*"
+sphinx-rtd-theme = "*"
+sphinx-autodoc-napoleon-typehints = "*"
+recommonmark = "*"
+
+[packages]
+quaternions = {editable = true, path = "."}
+pandas = "*"
+numpy = "*"
+scipy = "*"
+numba = "*"
+
+[pipenv]
+allow_prereleases = true
+
