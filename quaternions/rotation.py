@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from quaternions.utils import ZERO_VECTOR
+from quaternions.utils import AXES, ZERO_VECTOR, X, Y, Z
 
 
 def transform_cartesian_to_spherical(data: pd.DataFrame) -> pd.DataFrame:
@@ -38,7 +38,14 @@ def transform_cartesian_to_spherical(data: pd.DataFrame) -> pd.DataFrame:
 
     phi = np.arctan2(y, x)
 
-    return pd.DataFrame({"r": r, "theta": theta, "phi": phi,}, index=data.index)
+    return pd.DataFrame(
+        {
+            "r": r,
+            "theta": theta,
+            "phi": phi,
+        },
+        index=data.index,
+    )
 
 
 def transform_spherical_to_cartesian(data: pd.DataFrame) -> pd.DataFrame:
@@ -73,19 +80,26 @@ def transform_spherical_to_cartesian(data: pd.DataFrame) -> pd.DataFrame:
     y = r * np.sin(theta) * np.sin(phi)
     z = r * np.cos(theta)
 
-    return pd.DataFrame({"x": x, "y": y, "z": z,}, index=data.index)
+    return pd.DataFrame(
+        {
+            "x": x,
+            "y": y,
+            "z": z,
+        },
+        index=data.index,
+    )
 
 
 def euler_rotation(axis: str, angle: float) -> np.ndarray:
-    """ Return the (extrinsic) Euler rotation matrix about
+    """Return the (extrinsic) Euler rotation matrix about
     the principal `axis` by `angle`.
 
     Parameters
     ----------
     axis
-        One of the principal axes `x`, `y`, `z`.
-        In aircraft terminology, the `z` axis is aka `yaw` or `head`, 
-        the `y` axis is aka `pitch` and the `x` axis is aka `roll`
+        One of the principal axes `X`, `Y`, `Z`.
+        In aircraft terminology, the `Z` axis is aka `yaw` or `head`,
+        the `Y` axis is aka `pitch` and the `X` axis is aka `roll`
     angle
         The angle of rotation
 
@@ -95,45 +109,49 @@ def euler_rotation(axis: str, angle: float) -> np.ndarray:
         The :math:`3 \\times 3` matrix
         representing the rotation
         about the `axis` by `angle`
-    
+
     Raises
     ------
     ValueError
-        if `axis` is not one of `x`, `y`, `z`
+        if `axis` is not one of `AXES`
 
     """
 
-    axes = list("xyz")
+    rotation = np.eye(3)
 
-    if axis not in axes:
-        raise ValueError(f"{axis} must be one of {axes}")
+    if axis not in AXES:
+        raise ValueError(f"{axis} must be one of {AXES}")
 
-    if axis == "x":
-        return np.array(
+    # fmt: off
+    if axis == X:
+        rotation = np.array(
             [
-                [1, 0, 0],
-                [0, np.cos(angle), -np.sin(angle)],
-                [0, np.sin(angle), np.cos(angle)],
+                [            1.0,            0.0,            0.0 ], # noqa 
+                [            0.0,  np.cos(angle), -np.sin(angle) ], # noqa 
+                [            0.0,  np.sin(angle),  np.cos(angle) ], # noqa 
             ]
         )
 
-    if axis == "y":
-        return np.array(
+    if axis == Y:
+        rotation = np.array(
             [
-                [np.cos(angle), 0, np.sin(angle)],
-                [0, 1, 0],
-                [-np.sin(angle), 0, np.cos(angle)],
+                [  np.cos(angle),            0.0,  np.sin(angle) ], # noqa 
+                [            0.0,            1.0,            0.0 ], # noqa 
+                [ -np.sin(angle),            0.0,  np.cos(angle) ], # noqa 
             ]
         )
 
-    if axis == "z":
-        return np.array(
+    if axis == Z:
+        rotation = np.array(
             [
-                [np.cos(angle), -np.sin(angle), 0],
-                [np.sin(angle), np.cos(angle), 0],
-                [0, 0, 1],
+                [  np.cos(angle), -np.sin(angle),             0.0], # noqa 
+                [  np.sin(angle),  np.cos(angle),             0.0], # noqa 
+                [            0.0,            0.0,             1.0], # noqa 
             ]
         )
+    # fmt: on
+
+    return rotation
 
 
 def cross_product_matrix(vector: np.ndarray) -> np.ndarray:
@@ -164,7 +182,7 @@ def cross_product_matrix(vector: np.ndarray) -> np.ndarray:
     return Omega
 
 
-def rotation_axis_angle(axis: np.ndarray, phi: np.float) -> np.ndarray:
+def rotation_axis_angle(axis: np.ndarray, phi: float) -> np.ndarray:
     """
     Calculate rotation matrix around given axis by given angle,
     in positive (counterclockwise) orientation.
@@ -202,9 +220,13 @@ def rotation_axis_angle(axis: np.ndarray, phi: np.float) -> np.ndarray:
     if np.allclose(axis, ZERO_VECTOR):
         raise ArithmeticError("Axis vector almost zero")
 
-    axis = axis / np.sqrt(sum(axis ** 2))
+    axis = axis / np.sqrt(sum(axis**2))
     Omega = cross_product_matrix(axis)
 
-    R = np.identity(3) + np.sin(phi) * Omega + (1 - np.cos(phi)) * Omega @ Omega
+    R = (
+        np.identity(3)
+        + np.sin(phi) * Omega
+        + (1 - np.cos(phi)) * Omega @ Omega
+    )
 
     return R

@@ -18,6 +18,10 @@ clean: ## remove all non source artifacts
 	rm -fr .mypy_cache
 	rm -fr docs/_build/*
 
+style: 
+	pipenv run isort setup.py quaternions tests
+	pipenv run black --line-length 79 setup.py quaternions tests
+
 lint: 
 	pipenv run flake8 setup.py quaternions tests
 	pipenv run mypy quaternions

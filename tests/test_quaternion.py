@@ -36,7 +36,14 @@ def test_quaternion_init(obj, expected):
     assert result == expected
 
 
-@pytest.mark.parametrize("obj", ["0.5", [0, 1, 2, 3, 4], list("letters"),])
+@pytest.mark.parametrize(
+    "obj",
+    [
+        "0.5",
+        [0, 1, 2, 3, 4],
+        list("letters"),
+    ],
+)
 def test_quaternion_init_error(obj):
     with pytest.raises(TypeError):
         Quaternion(obj)
@@ -120,8 +127,14 @@ def test_pair(quat, expected):
         (Quaternion(0), np.zeros([2, 2])),
         (Quaternion(1), np.eye(2)),
         (Quaternion([1, 2, 3]), np.array([[1j, -2 - 3j], [2 - 3j, -1j]])),
-        (Quaternion([5, -1, 2, 3]), np.array([[5 - 1j, -2 - 3j], [2 - 3j, 5 + 1j]])),
-        (Quaternion((4, [3, 2, 1])), np.array([[4 + 3j, -2 - 1j], [2 - 1j, 4 - 3j]])),
+        (
+            Quaternion([5, -1, 2, 3]),
+            np.array([[5 - 1j, -2 - 3j], [2 - 3j, 5 + 1j]]),
+        ),
+        (
+            Quaternion((4, [3, 2, 1])),
+            np.array([[4 + 3j, -2 - 1j], [2 - 1j, 4 - 3j]]),
+        ),
     ],
 )
 def test_complex_matrix(quat, expected):
@@ -236,7 +249,10 @@ def test_inverse_error():
         (Quaternion(2), Quaternion(0.5)),
         (Quaternion([1, 2, 3]), Quaternion(-np.array([1, 2, 3]) / 14.0)),
         (Quaternion([1, 2, 3, 4]), Quaternion(np.array([1, -2, -3, -4]) / 30)),
-        (Quaternion((1, [-2, -3, -4])), Quaternion(np.array([1, 2, 3, 4]) / 30.0)),
+        (
+            Quaternion((1, [-2, -3, -4])),
+            Quaternion(np.array([1, 2, 3, 4]) / 30.0),
+        ),
     ],
 )
 def test_inverse(quat, expected):
@@ -305,8 +321,20 @@ def test_ne(p, q):
         # expected -p
         # expected ~p
         # expected abs(p)
-        (Quaternion(0), Quaternion(0), Quaternion(0), Quaternion(0), 0,),
-        (Quaternion(-1.2), Quaternion(-1.2), Quaternion(1.2), Quaternion(-1.2), 1.2,),
+        (
+            Quaternion(0),
+            Quaternion(0),
+            Quaternion(0),
+            Quaternion(0),
+            0,
+        ),
+        (
+            Quaternion(-1.2),
+            Quaternion(-1.2),
+            Quaternion(1.2),
+            Quaternion(-1.2),
+            1.2,
+        ),
         (
             Quaternion([1, 1, 0]),
             Quaternion([1, 1, 0]),
@@ -407,11 +435,35 @@ fxt_quat_struct = [
 ]
 
 fxt_quat_struct_list = [
-    [[0, 1, -1], [-1, 1, -1], [2.3, 0.2, 1.5],],  # list of vectors
-    np.array([[1, 2, 3], [-1, 0, 2], [-2, 1, -1],]),  # array of vectors
-    [[5, 2, 1, 0], [0, -1, 1, -1], [1.1, 2.2, 1.5, -4.5],],  # list of points
-    np.array([[0, 1.1, 0, 3], [0.2, 1.0, 0, 2], [-1.5, 1, 3, 1],]),  # array of points
-    [(1, np.array([1, 2, 3])), (0, [-1, -2, 0]), (-1, [2, 0, -2]),],  # list of pairs
+    [
+        [0, 1, -1],
+        [-1, 1, -1],
+        [2.3, 0.2, 1.5],
+    ],  # list of vectors
+    np.array(
+        [
+            [1, 2, 3],
+            [-1, 0, 2],
+            [-2, 1, -1],
+        ]
+    ),  # array of vectors
+    [
+        [5, 2, 1, 0],
+        [0, -1, 1, -1],
+        [1.1, 2.2, 1.5, -4.5],
+    ],  # list of points
+    np.array(
+        [
+            [0, 1.1, 0, 3],
+            [0.2, 1.0, 0, 2],
+            [-1.5, 1, 3, 1],
+        ]
+    ),  # array of points
+    [
+        (1, np.array([1, 2, 3])),
+        (0, [-1, -2, 0]),
+        (-1, [2, 0, -2]),
+    ],  # list of pairs
     [  # list of quaternions
         Quaternion(-3.0),
         Quaternion([0, 1, 0]),
@@ -669,15 +721,31 @@ def test_quaternion_axis_angle_fails(q):
 @pytest.mark.parametrize(
     "u, exp_axis, exp_angle",
     [
-        (Quaternion(1), np.array([1, 0, 0]), 0,),
+        (
+            Quaternion(1),
+            np.array([1, 0, 0]),
+            0,
+        ),
         (
             1 / 2 * Quaternion([1, 1, 1, 1]),
             np.array([1, 1, 1]) / np.sqrt(3),
             2 / 3 * np.pi,
         ),
-        (UNIT_QUATERNION["x90"], np.array([1, 0, 0]), 1 / 2 * np.pi,),
-        (UNIT_QUATERNION["y90"], np.array([0, 1, 0]), 1 / 2 * np.pi,),
-        (UNIT_QUATERNION["z90"], np.array([0, 0, 1]), 1 / 2 * np.pi,),
+        (
+            UNIT_QUATERNION["x90"],
+            np.array([1, 0, 0]),
+            1 / 2 * np.pi,
+        ),
+        (
+            UNIT_QUATERNION["y90"],
+            np.array([0, 1, 0]),
+            1 / 2 * np.pi,
+        ),
+        (
+            UNIT_QUATERNION["z90"],
+            np.array([0, 0, 1]),
+            1 / 2 * np.pi,
+        ),
         (
             Quaternion((np.sqrt(3) / 2, np.array([1, 1, 0]) / 2 / np.sqrt(2))),
             np.array([1, 1, 0]) / np.sqrt(2),
@@ -694,7 +762,6 @@ def test_quaternion_axis_angle(u, exp_axis, exp_angle):
 
 @pytest.mark.parametrize("q", NON_UNIT_QUATERNION)
 def test_quaternion_rot_matrix_fails(q):
-
     with pytest.raises(ArithmeticError):
         q.rot_matrix()
 
@@ -703,10 +770,22 @@ def test_quaternion_rot_matrix_fails(q):
     "quat, exp",
     [
         (Quaternion(1), np.eye(3)),
-        (UNIT_QUATERNION["x90"], np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]),),
-        (UNIT_QUATERNION["y90"], np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]),),
-        (UNIT_QUATERNION["z90"], np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]]),),
-        (1 / 2 * Quaternion([1, 1, 1, 1]), np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]])),
+        (
+            UNIT_QUATERNION["x90"],
+            np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]]),
+        ),
+        (
+            UNIT_QUATERNION["y90"],
+            np.array([[0, 0, 1], [0, 1, 0], [-1, 0, 0]]),
+        ),
+        (
+            UNIT_QUATERNION["z90"],
+            np.array([[0, -1, 0], [1, 0, 0], [0, 0, 1]]),
+        ),
+        (
+            1 / 2 * Quaternion([1, 1, 1, 1]),
+            np.array([[0, 0, 1], [1, 0, 0], [0, 1, 0]]),
+        ),
     ],
 )
 def test_quaternion_rot_matrix(quat, exp):
@@ -723,7 +802,15 @@ def test_quaternion_euler_angles_fails_unit(q):
         q.euler_angles("x", "y", "z")
 
 
-@pytest.mark.parametrize("axes", ["abc", "XYZ", "xxy", "yzy",])
+@pytest.mark.parametrize(
+    "axes",
+    [
+        "abc",
+        "XYZ",
+        "xxy",
+        "yzy",
+    ],
+)
 def test_quaternion_euler_angles_fails_axes(axes):
     q = Quaternion(1)
 
@@ -733,7 +820,6 @@ def test_quaternion_euler_angles_fails_axes(axes):
 
 @pytest.mark.parametrize("axes", EULER_SEQUENCE)
 def test_quaternion_euler_angles_identity(axes):
-
     result = Quaternion(1).euler_angles(*list(axes))
     assert result == (0, 0, 0)
 
@@ -762,7 +848,6 @@ def test_quaternion_euler_angles_identity(axes):
     ],
 )
 def test_quaternion_euler_angles(quat, axes, expected):
-
     result = quat.euler_angles(*list(axes))
     assert result == expected
 
@@ -817,7 +902,11 @@ def test_to_quaternion(arg):
         np.array([[3, 0, 1, 0], [2, 1, 1, 1]]),
         np.repeat(-2.5, 16).reshape(-1, 4),
         [(0, [1, 2, 3]), (0, np.array([1, 2, 3])), (-2, [-1, -2, 0])],
-        [Quaternion(0), Quaternion([1, 2, 3]), Quaternion([1, -1, 0, 1]),],
+        [
+            Quaternion(0),
+            Quaternion([1, 2, 3]),
+            Quaternion([1, -1, 0, 1]),
+        ],
     ],
 )
 def test_to_quaternion_struct(arg):
@@ -842,7 +931,11 @@ def test_rotation_quat_from_axis_angle_invalid(axis, angle, error):
     "axis, angle, expected",
     [
         ([1, 0, 0], 0.0, Quaternion(1)),  # angle=0 -> identity rotation
-        ([22, 0, 0], np.pi / 2, UNIT_QUATERNION["x90"],),  # axis=X-axis, angle=90
+        (
+            [22, 0, 0],
+            np.pi / 2,
+            UNIT_QUATERNION["x90"],
+        ),  # axis=X-axis, angle=90
         (
             [0, -3, 0],
             np.pi,  # axis=neg. Y-axis, angle=180
@@ -890,7 +983,12 @@ def test_rotate_by_axis_angle(axis, angle, vector):
 @pytest.mark.parametrize("n", [10, 20, 50, 100])
 @pytest.mark.parametrize("angle", [1.2, np.pi / 3, 2.0, 3.3])
 @pytest.mark.parametrize(
-    "axis", [np.array([1, 1, 1]), np.array([2, 0, -1]), np.array([-1, 1.5, -1.3]),]
+    "axis",
+    [
+        np.array([1, 1, 1]),
+        np.array([2, 0, -1]),
+        np.array([-1, 1.5, -1.3]),
+    ],
 )
 def test_rotate_by_axis_angle_vectors(n, axis, angle):
     # create vectors pointing in axis direction

@@ -19,15 +19,15 @@ PAIR                list of
 """
 
 import math
-from typing import Any, List, Tuple, Union
+from typing import Any, List, Tuple, Union, cast
 
 import numpy as np
 
-from quaternions.types import ALL_VECTOR, T_PAIR, T_POINT, T_SCALAR, T_VECTOR
+from quaternions.types import ALL_VECTOR, T_PAIR, T_SCALAR, T_VECTOR
 from quaternions.utils import (
+    AXES,
     ZERO_VECTOR,
     euler_angles_from_rot_matrix,
-    euler_arcsin_numerical_stability,
     is_list,
     is_pair,
     is_pair_list,
@@ -45,21 +45,19 @@ from quaternions.utils import (
     rot_matrix_from_point,
 )
 
-T_QUAT = "Quaternion"
-ALL_QUAT = Union[T_QUAT, List[T_QUAT]]
+ALL_QUAT = Union["Quaternion", List["Quaternion"]]
 
-T_DQUAT = "DualQuaternion"
-ALL_DQUAT = Union[T_DQUAT, List[T_DQUAT]]
+ALL_DQUAT = Union["DualQuaternion", List["DualQuaternion"]]
 
 # map from numpy ufunc to binary operation
 _UFUNC_TO_BINOP = {
     "add": lambda p, q: p + q,
     "subtract": lambda p, q: p - q,
     "multiply": lambda p, q: p * q,
+    "divide": lambda p, q: p / q,
+    # for backward compatibility:
     "true_divide": lambda p, q: p / q,
 }
-
-VALID_AXES = {"x", "y", "z"}
 
 
 class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
@@ -74,7 +72,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
     """
 
     def __init__(self, obj: Any) -> None:
-        """ A Quaternion can be constructed:
+        """A Quaternion can be constructed:
 
         * from a scalar
 
@@ -108,7 +106,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
     ########################################
 
     @property
-    def point(self) -> T_POINT:
+    def point(self) -> np.ndarray:
         return self._point
 
     @property
@@ -116,7 +114,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         return self.point[0]
 
     @property
-    def vector_part(self) -> T_VECTOR:
+    def vector_part(self) -> np.ndarray:
         return self.point[1:]
 
     @property
@@ -188,7 +186,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         return self.is_scalar and self.is_vector
 
     @property
-    def conjugate(self) -> T_QUAT:
+    def conjugate(self) -> "Quaternion":
         """
         The conjugate quaternion
 
@@ -202,7 +200,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         return conj
 
     @property
-    def inverse(self) -> T_QUAT:
+    def inverse(self) -> "Quaternion":
         if self.is_zero:
             raise ArithmeticError("zero is not invertible")
 
@@ -217,7 +215,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
     @property
     def squared_norm(self):
-        return sum(self.point ** 2)
+        return sum(self.point**2)
 
     ##############################
     # OPERATOR OVERLOADING
@@ -229,13 +227,13 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
     def __str__(self) -> str:
         return f"({self.pair})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not is_quaternion(other):
             return False
 
         return np.allclose(self.point, other.point)
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not (self == other)
 
     def __hash__(self):
@@ -246,15 +244,15 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
     ##############################
 
     # positive value: +q
-    def __pos__(self) -> T_QUAT:
+    def __pos__(self) -> "Quaternion":
         return self
 
     # negative value: -q
-    def __neg__(self) -> T_QUAT:
+    def __neg__(self) -> "Quaternion":
         return Quaternion(-self.point)
 
     # conjugate: ~q
-    def __invert__(self) -> T_QUAT:
+    def __invert__(self) -> "Quaternion":
         return self.conjugate
 
     # absolute value abs(q)
@@ -290,7 +288,9 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         return result
 
     # helper function for multiplication
-    def _mult_2_quaternions(self, p: T_QUAT, q: T_QUAT) -> T_QUAT:
+    def _mult_2_quaternions(
+        self, p: "Quaternion", q: "Quaternion"
+    ) -> "Quaternion":
         point_prod = mul_two_points(p.point, q.point)
 
         return Quaternion(point_prod)
@@ -341,7 +341,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         else:
             return self._mult_2_quaternions(self, other)
 
-    def __imul__(self, other: Any) -> T_QUAT:
+    def __imul__(self, other: Any) -> "Quaternion":
         return self * other
 
     def __rmul__(self, other: Any) -> ALL_QUAT:
@@ -364,7 +364,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
                 raise ArithmeticError("cannot divide by zero")
             return self._mult_2_quaternions(self, other.inverse)
 
-    def __itruediv__(self, other: Any) -> T_QUAT:
+    def __itruediv__(self, other: Any) -> "Quaternion":
         return self / other
 
     def __rtruediv__(self, other: Any) -> ALL_QUAT:
@@ -429,7 +429,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         Raises
         ------
         ValueError
-            if the sequence of `axis3`, `axis2`, `axis1` 
+            if the sequence of `axis3`, `axis2`, `axis1`
             is not a permutation of `x`, `y`, `z`
         ArithmeticError
             if this is not a unit quaternion
@@ -438,9 +438,9 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
         axes = [axis3, axis2, axis1]
 
-        if not set(axes) == VALID_AXES:
+        if not set(axes) == AXES:
             raise ValueError(
-                f"{axis3}, {axis2}, {axis1} must be a permutation of {VALID_AXES}"
+                f"{axis3}, {axis2}, {axis1} must be a permutation of {AXES}"
             )
 
         if not self.is_unit:
@@ -449,7 +449,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         rm = self.rot_matrix()
 
         if axes == ["x", "y", "z"]:
-            return euler_angles_from_rot_matrix(
+            angles = euler_angles_from_rot_matrix(
                 rm[0, 2],
                 -rm[1, 2],
                 rm[2, 2],
@@ -463,7 +463,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             )
 
         elif axes == ["x", "z", "y"]:
-            return euler_angles_from_rot_matrix(
+            angles = euler_angles_from_rot_matrix(
                 -rm[0, 1],
                 rm[2, 1],
                 rm[1, 1],
@@ -476,7 +476,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             )
 
         elif axes == ["y", "x", "z"]:
-            return euler_angles_from_rot_matrix(
+            angles = euler_angles_from_rot_matrix(
                 -rm[1, 2],
                 rm[0, 2],
                 rm[2, 2],
@@ -489,7 +489,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             )
 
         elif axes == ["y", "z", "x"]:
-            return euler_angles_from_rot_matrix(
+            angles = euler_angles_from_rot_matrix(
                 rm[1, 0],
                 -rm[2, 0],
                 rm[0, 0],
@@ -503,7 +503,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             )
 
         elif axes == ["z", "x", "y"]:
-            return euler_angles_from_rot_matrix(
+            angles = euler_angles_from_rot_matrix(
                 rm[2, 1],
                 -rm[0, 1],
                 rm[1, 1],
@@ -517,7 +517,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             )
 
         elif axes == ["z", "y", "x"]:
-            return euler_angles_from_rot_matrix(
+            angles = euler_angles_from_rot_matrix(
                 -rm[2, 0],
                 rm[1, 0],
                 rm[0, 0],
@@ -534,7 +534,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             # we should never reach this code
             raise NotImplementedError()
 
-        return angle3, angle2, angle1
+        return angles
 
     def rot_matrix(self) -> np.ndarray:
         """
@@ -581,7 +581,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
             return np.array([1, 0, 0]), 0.0
 
         angle = 2 * np.arccos(self.scalar_part)
-        axis = self.vector_part / np.sqrt(1 - self.scalar_part ** 2)
+        axis = self.vector_part / np.sqrt(1 - self.scalar_part**2)
         return axis, angle
 
     ########################################
@@ -619,7 +619,11 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         return cls(obj)
 
     @classmethod
-    def rotation_quat_from_axis_angle(cls, axis: T_VECTOR, angle: T_SCALAR) -> T_QUAT:
+    def rotation_quat_from_axis_angle(
+        cls,
+        axis: np.ndarray,
+        angle: T_SCALAR,
+    ) -> "Quaternion":
         """
         Create a rotation quaternion from axis and angle.
         The resulting unit quaternion :math:`r` defines a rotation
@@ -633,7 +637,7 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
         if np.allclose(axis, ZERO_VECTOR):
             raise ArithmeticError(f"axis {axis} is almost zero")
 
-        v = axis / np.sqrt(sum(a ** 2 for a in axis))
+        v = axis / np.sqrt(sum(a**2 for a in axis))
 
         s = np.cos(angle / 2)
         u = np.sin(angle / 2) * v
@@ -642,23 +646,27 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
     @classmethod
     def rotate_by_axis_angle(
-        cls, axis: T_VECTOR, angle: T_SCALAR, vectors: ALL_VECTOR
+        cls, axis: np.ndarray, angle: T_SCALAR, vectors: ALL_VECTOR
     ) -> ALL_VECTOR:
         """
         Rotate a bunch of vectors by axis, angle
         """
 
         if not (
-            is_vector(vectors) or is_vector_list(vectors) or is_vector_array(vectors)
+            is_vector(vectors)
+            or is_vector_list(vectors)
+            or is_vector_array(vectors)
         ):
-            raise ValueError(f"wrong data type for vectors")
+            raise ValueError("wrong data type for vectors")
 
         q = cls.rotation_quat_from_axis_angle(axis, angle)
         rotated = q.group_conjugate(vectors)
 
         if is_list(rotated):
-            return [q.vector_part for q in rotated]
+            rotated = cast(List["Quaternion"], rotated)
+            return [q.vector_part for q in rotated]  # type: ignore
         else:
+            rotated = cast("Quaternion", rotated)
             return rotated.vector_part
 
 
@@ -666,12 +674,12 @@ def is_quaternion(o: Any) -> bool:
     return isinstance(o, Quaternion)
 
 
-def is_quaternion_list(l: Any) -> bool:
-    return is_list(l) and all(is_quaternion(e) for e in l)
+def is_quaternion_list(lst: Any) -> bool:
+    return is_list(lst) and all(is_quaternion(e) for e in lst)
 
 
-def is_quaternion_type(o: Any) -> bool:
-    return is_quaternion(o) or is_quaternion_list(o)
+def is_quaternion_type(obj: Any) -> bool:
+    return is_quaternion(obj) or is_quaternion_list(obj)
 
 
 class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
@@ -689,7 +697,6 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
     """
 
     def __init__(self, *args: Any) -> None:
-
         errmsg = f"Cannot construct a dual quaternion from {args}"
 
         if len(args) == 1:
@@ -711,7 +718,7 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
     ########################################
 
     @property
-    def quats(self) -> Tuple[T_QUAT, T_QUAT]:
+    def quats(self) -> Tuple["Quaternion", "Quaternion"]:
         return self._quats
 
     @property
@@ -719,7 +726,7 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
         return all(x.is_zero for x in self.quats)
 
     @property
-    def conjugate(self) -> T_DQUAT:
+    def conjugate(self) -> "DualQuaternion":
         """
         The conjugate dual quaternion
         :math:`\\sigma^* = p^* + \\epsilon q^*`
@@ -731,11 +738,11 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
         """
         p, q = self.quats
-        return DualQuaternion(p.conjugate, q.conjugate)
+        return DualQuaternion(p.conjugate, q.conjugate)  # type:ignore
 
     @property
-    def inverse(self) -> T_DQUAT:
-        """ The inverse of :math:`\\sigma = p + \\epsilon q`
+    def inverse(self) -> "DualQuaternion":
+        """The inverse of :math:`\\sigma = p + \\epsilon q`
         exists if :math:`p` is invertible and
         is :math:`\\sigma^{-1} = p^{-1} - \\epsilon p^{-1} q p^{-1}`
         """
@@ -748,10 +755,10 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
         ip = p.inverse
         iq = -ip * q * ip
 
-        return DualQuaternion(ip, iq)
+        return DualQuaternion(ip, iq)  # type:ignore
 
     @property
-    def double_conjugate(self) -> T_DQUAT:
+    def double_conjugate(self) -> "DualQuaternion":
         """
         The double conjugate dual quaternion
         :math:`\\sigma^* = p^* - \\epsilon q^*`
@@ -763,12 +770,12 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
         """
         p, q = self.quats
-        return DualQuaternion(p.conjugate, -q.conjugate)
+        return DualQuaternion(p.conjugate, -q.conjugate)  # type:ignore
 
     @property
     def is_unit(self) -> bool:
         norm = self * self.conjugate
-        p, q = norm.quats
+        p, q = norm.quats  # type:ignore
         return p == Quaternion(1) and q.is_zero
 
     ##############################
@@ -783,13 +790,13 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
         p, q = self.quats
         return f"({p}; {q})"
 
-    def __eq__(self, other: object) -> bool:
+    def __eq__(self, other: Any) -> bool:
         if not is_dual_quaternion(other):
             return False
 
         return all(x == y for x, y in zip(self.quats, other.quats))
 
-    def __ne__(self, other: object) -> bool:
+    def __ne__(self, other: Any) -> bool:
         return not (self == other)
 
     def __hash__(self):
@@ -800,46 +807,65 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
     ##############################
 
     # helper function for multiplication
-    def _mult_2_dual_quaternions(self, a: T_DQUAT, b: T_DQUAT) -> T_DQUAT:
-
+    def _mult_2_dual_quaternions(
+        self, a: "DualQuaternion", b: "DualQuaternion"
+    ) -> "DualQuaternion":
         p, q = a.quats
         po, qo = b.quats
-        return DualQuaternion(p * po, p * qo + q * po)
+        return DualQuaternion(p * po, p * qo + q * po)  # type:ignore
 
     def __add__(self, other: ALL_DQUAT) -> ALL_DQUAT:
-
         if is_list(other):
+            other = cast(List["DualQuaternion"], other)
             return [
-                DualQuaternion(tuple(x + y for x, y in zip(self.quats, o.quats)))
+                DualQuaternion(  # type:ignore
+                    tuple(x + y for x, y in zip(self.quats, o.quats))
+                )
                 for o in other
             ]
         else:
-            return DualQuaternion(tuple(x + y for x, y in zip(self.quats, other.quats)))
+            return DualQuaternion(  # type:ignore
+                tuple(
+                    x + y
+                    for x, y in zip(self.quats, other.quats)  # type:ignore
+                )
+            )
 
     def __sub__(self, other: ALL_DQUAT) -> ALL_DQUAT:
-
         if is_list(other):
+            other = cast(List["DualQuaternion"], other)
             return [
-                DualQuaternion(tuple(x - y for x, y in zip(self.quats, o.quats)))
+                DualQuaternion(  # type:ignore
+                    tuple(x - y for x, y in zip(self.quats, o.quats))
+                )
                 for o in other
             ]
         else:
-            return DualQuaternion(tuple(x - y for x, y in zip(self.quats, other.quats)))
+            return DualQuaternion(
+                tuple(
+                    x - y
+                    for x, y in zip(self.quats, other.quats)  # type:ignore
+                )
+            )
 
     def __mul__(self, other: ALL_DQUAT) -> ALL_DQUAT:
-
         if is_list(other):
+            other = cast(List["DualQuaternion"], other)
             return [self._mult_2_dual_quaternions(self, o) for o in other]
         else:
+            other = cast("DualQuaternion", other)
             return self._mult_2_dual_quaternions(self, other)
 
     def __truediv__(self, other: ALL_DQUAT) -> ALL_DQUAT:
-
         if is_list(other):
+            other = cast(List["DualQuaternion"], other)
             if any(o.is_zero for o in other):
                 raise ArithmeticError("cannot divide by zero")
-            return [self._mult_2_dual_quaternions(self, o.inverse) for o in other]
+            return [
+                self._mult_2_dual_quaternions(self, o.inverse) for o in other
+            ]
         else:
+            other = cast("DualQuaternion", other)
             if other.is_zero:
                 raise ArithmeticError("cannot divide by zero")
             return self._mult_2_dual_quaternions(self, other.inverse)
@@ -850,8 +876,12 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
     @classmethod
     def rigid_displacement(
-        cls, axis: T_VECTOR, angle: T_SCALAR, translation: T_VECTOR, rotate_first=True
-    ) -> T_DQUAT:
+        cls,
+        axis: np.ndarray,
+        angle: float,
+        translation: T_VECTOR,
+        rotate_first=True,
+    ) -> "DualQuaternion":
         """
         Create a unit dual quaternion representing a rigid displacement:
         rotation around `axis` by `angle` and `translation`.
@@ -870,15 +900,15 @@ class DualQuaternion(np.lib.mixins.NDArrayOperatorsMixin):
         else:
             q = r * t
 
-        return DualQuaternion(r, q)
+        return DualQuaternion(r, q)  # type: ignore
 
 
 def is_dual_quaternion(o: Any) -> bool:
     return isinstance(o, DualQuaternion)
 
 
-def is_dual_quaternion_list(l: Any) -> bool:
-    return is_list(l) and all(is_dual_quaternion(e) for e in l)
+def is_dual_quaternion_list(lst: Any) -> bool:
+    return is_list(lst) and all(is_dual_quaternion(e) for e in lst)
 
 
 def is_dual_quaternion_type(o: Any) -> bool:

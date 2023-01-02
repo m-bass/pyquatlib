@@ -70,12 +70,60 @@ def test_euler_rotation_invalid_axis(axis, angle):
 @pytest.mark.parametrize(
     "axis, angle, expected",
     [
-        ("x", 0, np.eye(3),),
-        ("y", 0, np.eye(3),),
-        ("z", 0, np.eye(3),),
-        ("x", np.pi / 2, np.array(([[1, 0, 0], [0, 0, -1], [0, 1, 0],])),),
-        ("y", np.pi / 2, np.array(([[0, 0, 1], [0, 1, 0], [-1, 0, 0],])),),
-        ("z", np.pi / 2, np.array(([[0, -1, 0], [1, 0, 0], [0, 0, 1],])),),
+        (
+            "x",
+            0,
+            np.eye(3),
+        ),
+        (
+            "y",
+            0,
+            np.eye(3),
+        ),
+        (
+            "z",
+            0,
+            np.eye(3),
+        ),
+        (
+            "x",
+            np.pi / 2,
+            np.array(
+                (
+                    [
+                        [1, 0, 0],
+                        [0, 0, -1],
+                        [0, 1, 0],
+                    ]
+                )
+            ),
+        ),
+        (
+            "y",
+            np.pi / 2,
+            np.array(
+                (
+                    [
+                        [0, 0, 1],
+                        [0, 1, 0],
+                        [-1, 0, 0],
+                    ]
+                )
+            ),
+        ),
+        (
+            "z",
+            np.pi / 2,
+            np.array(
+                (
+                    [
+                        [0, -1, 0],
+                        [1, 0, 0],
+                        [0, 0, 1],
+                    ]
+                )
+            ),
+        ),
         (
             "x",
             np.pi / 4,
@@ -93,13 +141,21 @@ def test_euler_rotation_invalid_axis(axis, angle):
             "z",
             np.pi / 6,
             np.array(
-                ([[np.sqrt(3) / 2, -1 / 2, 0], [1 / 2, np.sqrt(3) / 2, 0], [0, 0, 1],])
+                (
+                    [
+                        [np.sqrt(3) / 2, -1 / 2, 0],
+                        [1 / 2, np.sqrt(3) / 2, 0],
+                        [0, 0, 1],
+                    ]
+                )
             ),
         ),
     ],
 )
 def test_euler_rotation(
-    axis, angle, expected,
+    axis,
+    angle,
+    expected,
 ):
     result = euler_rotation(axis, angle)
 

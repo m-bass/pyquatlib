@@ -1,4 +1,5 @@
 import pathlib
+
 from setuptools import find_packages, setup
 
 # The parent directory
@@ -11,11 +12,11 @@ README = (DIR / "README.md").read_text()
 setup(
     name="pyquatlib",
     version="1.0.0",
-    description='yet another library for quaternions',
+    description="yet another library for quaternions",
     long_description=README,
     long_description_content_type="text/markdown",
     url="https://github.com/m-bass/pyquatlib",
-    author='Marco Bosatta',
+    author="Marco Bosatta",
     author_email="mb@xp-obj.com",
     license="MIT",
     classifiers=[
@@ -28,12 +29,12 @@ setup(
     ],
     packages=find_packages(exclude=("tests", "docs")),
     include_package_data=True,
-    install_requires=['numpy', 'pandas', 'numba'],
-    python_requires='>=3',
+    install_requires=["numpy", "pandas", "numba"],
+    python_requires=">=3",
     entry_points={
         "console_scripts": [
             "realpython=reader.__main__:main",
         ]
     },
-    test_suite='tests',
+    test_suite="tests",
 )

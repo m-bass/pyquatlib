@@ -3,8 +3,7 @@ import math
 from typing import Any, List, Tuple
 
 import numpy as np
-import pandas as pd
-from numba import jit
+from numba import jit  # type: ignore
 
 from quaternions.types import POINT, SCALAR, T_PAIR, T_POINT, VECTOR
 
@@ -12,10 +11,15 @@ ZERO_VECTOR = np.zeros(3)
 
 LOGGER = logging.getLogger("quaternions")
 
+X = "x"
+Y = "y"
+Z = "z"
+AXES = {X, Y, Z}
+
 
 @jit
 def mul_two_points(p: T_POINT, q: T_POINT) -> T_POINT:
-    """ This is the quaternion multproduct of two 4D `T_POINT`s
+    """This is the quaternion multproduct of two 4D `T_POINT`s
 
     Parameters
     ----------
@@ -41,7 +45,7 @@ def mul_two_points(p: T_POINT, q: T_POINT) -> T_POINT:
 
 @jit
 def rot_matrix_from_point(q: T_POINT) -> np.ndarray:
-    """ Yields the rotation matrix for a point representing a unit quaternion
+    """Yields the rotation matrix for a point representing a unit quaternion
 
     Parameters
     ----------
@@ -51,26 +55,26 @@ def rot_matrix_from_point(q: T_POINT) -> np.ndarray:
     Returns
     -------
     mat
-        the rotation matrix 
+        the rotation matrix
 
     """
 
     w, x, y, z = q
 
     row0 = [
-        w ** 2 + x ** 2 - y ** 2 - z ** 2,
+        w**2 + x**2 - y**2 - z**2,
         2 * (x * y - w * z),
         2 * (x * z + w * y),
     ]
     row1 = [
         2 * (x * y + w * z),
-        w ** 2 - x ** 2 + y ** 2 - z ** 2,
+        w**2 - x**2 + y**2 - z**2,
         2 * (y * z - w * x),
     ]
     row2 = [
         2 * (x * z - w * y),
         2 * (y * z + w * x),
-        w ** 2 - x ** 2 - y ** 2 + z ** 2,
+        w**2 - x**2 - y**2 + z**2,
     ]
 
     return np.array([row0, row1, row2])
@@ -78,7 +82,10 @@ def rot_matrix_from_point(q: T_POINT) -> np.ndarray:
 
 def matrix_from_point(p: T_POINT) -> np.ndarray:
     matrix = np.array(
-        [[p[0] + p[1] * 1j, -p[2] - p[3] * 1j], [p[2] - p[3] * 1j, p[0] - p[1] * 1j]]
+        [
+            [p[0] + p[1] * 1j, -p[2] - p[3] * 1j],
+            [p[2] - p[3] * 1j, p[0] - p[1] * 1j],
+        ]
     )
     return matrix
 
@@ -88,7 +95,7 @@ def is_list(o: Any) -> bool:
 
 
 def is_tuple(o: Any) -> bool:
-    return isinstance(o, Tuple)
+    return isinstance(o, tuple)
 
 
 def _is_2d_array(a: Any) -> bool:
@@ -137,16 +144,16 @@ def is_point_array(a: Any) -> bool:
     return all(is_point(e) for e in a)
 
 
-def is_vector_list(l: Any) -> bool:
-    return is_list(l) and all(is_vector(e) for e in l)
+def is_vector_list(lst: Any) -> bool:
+    return is_list(lst) and all(is_vector(e) for e in lst)
 
 
-def is_point_list(l: Any) -> bool:
-    return is_list(l) and all(is_point(e) for e in l)
+def is_point_list(lst: Any) -> bool:
+    return is_list(lst) and all(is_point(e) for e in lst)
 
 
-def is_pair_list(l: Any) -> bool:
-    return is_list(l) and all(is_pair(e) for e in l)
+def is_pair_list(lst: Any) -> bool:
+    return is_list(lst) and all(is_pair(e) for e in lst)
 
 
 def pair_to_point(pair: T_PAIR) -> T_POINT:
@@ -154,13 +161,13 @@ def pair_to_point(pair: T_PAIR) -> T_POINT:
     return [s] + list(v)
 
 
-def euler_arcsin_numerical_stability(rot_mat_elem: float) -> None:
+def euler_arcsin_numerical_stability(rot_mat_elem: float) -> float:
     sign = np.sign(rot_mat_elem)
 
     if math.isclose(rot_mat_elem, sign, rel_tol=1e-7):
         LOGGER.warning(
-            f"setting rotation matrix element "
-            "{rot_mat_elem} to {sign} for numerical "
+            "setting rotation matrix element "
+            f"{rot_mat_elem} to {sign} for numerical "
             "stability of arcsin"
         )
         rot_mat_elem = sign
