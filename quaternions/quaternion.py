@@ -23,7 +23,7 @@ from typing import Any, List, Tuple, Union, cast
 
 import numpy as np
 
-from quaternions.types import ALL_VECTOR, T_PAIR, T_SCALAR, T_VECTOR
+from quaternions.types import T_PAIR, T_SCALAR, T_VECTOR
 from quaternions.utils import (
     AXES,
     ZERO_VECTOR,
@@ -646,8 +646,8 @@ class Quaternion(np.lib.mixins.NDArrayOperatorsMixin):
 
     @classmethod
     def rotate_by_axis_angle(
-        cls, axis: np.ndarray, angle: T_SCALAR, vectors: ALL_VECTOR
-    ) -> ALL_VECTOR:
+        cls, axis: np.ndarray, angle: T_SCALAR, vectors: T_VECTOR
+    ) -> T_VECTOR:
         """
         Rotate a bunch of vectors by axis, angle
         """

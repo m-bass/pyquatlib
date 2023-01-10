@@ -27,3 +27,8 @@ Rotations
 .. autofunction:: transform_cartesian_to_spherical
 
 .. autofunction:: euler_rotation
+
+Custom types
+------------
+
+.. automodule:: quaternions.types
