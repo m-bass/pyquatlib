@@ -3,7 +3,7 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-SPHINXBUILD   = pipenv run python -m sphinx
+SPHINXBUILD   = poetry run python -m sphinx
 SPHINXPROJ    = quaternions
 SOURCEDIR     = source
 BUILDDIR      = _build

@@ -223,10 +223,6 @@ def rotation_axis_angle(axis: np.ndarray, phi: float) -> np.ndarray:
     axis = axis / np.sqrt(sum(axis**2))
     Omega = cross_product_matrix(axis)
 
-    R = (
-        np.identity(3)
-        + np.sin(phi) * Omega
-        + (1 - np.cos(phi)) * Omega @ Omega
-    )
+    R = np.identity(3) + np.sin(phi) * Omega + (1 - np.cos(phi)) * Omega @ Omega
 
     return R

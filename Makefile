@@ -19,22 +19,22 @@ clean: ## remove all non source artifacts
 	rm -fr docs/_build/*
 
 style: 
-	pipenv run isort setup.py quaternions tests
-	pipenv run black --line-length 79 setup.py quaternions tests
+	poetry run isort setup.py quaternions tests
+	poetry run black --line-length 80 setup.py quaternions tests
 
 lint: 
-	pipenv run flake8 setup.py quaternions tests
-	pipenv run mypy quaternions
+	poetry run flake8 setup.py quaternions tests
+	poetry run mypy quaternions
 
 test: ## run the full suite of unit tests
-	pipenv run pytest tests
+	poetry run pytest tests
 
 docs: ## generate Sphinx HTML documentation, including API docs
-	pipenv run $(MAKE) -C docs clean
-	pipenv run $(MAKE) -C docs html
+	poetry run $(MAKE) -C docs clean
+	poetry run $(MAKE) -C docs html
 
 dist: clean ## build distribution packages
-	pipenv run python setup.py sdist bdist_wheel
+	poetry run python setup.py sdist bdist_wheel
 
 release: dist ## publish to PyPi
 	twine upload dist/*
